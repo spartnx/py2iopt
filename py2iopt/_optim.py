@@ -1,9 +1,11 @@
 """
-Functions needed to solve the optimization.
+Functions to solve the optimization.
 """
 
 import pykep as pk
 import pygmo as pg
+
+from ._state_transition import psi, psi_inv
 
 class deltav_udp:
     """UDP defining the deltaV as fitness"""
