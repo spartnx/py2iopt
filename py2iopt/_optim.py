@@ -29,6 +29,10 @@ class deltav_udp:
         ubs = np.full((2,), tf)
         return (lbs, ubs)
 
+    def gradient(self, x):
+        return grad_fcn(x, *self.params)
+
+
 @njit
 def obj_fcn(x, t0, tf, r0, rf, v0, vf, mu):
     """Compute deltaV of two-impulse rendezvous with initial and final coasting.
@@ -61,6 +65,7 @@ def obj_fcn(x, t0, tf, r0, rf, v0, vf, mu):
     dv1_mag = np.linalg.norm(v1p - v1m)
     dv2_mag = np.linalg.norm(v2p - v2m)
     return dv1_mag + dv2_mag
+
 
 @njit
 def grad_fcn(x, t0, tf, r0, rf, v0, vf, mu):
