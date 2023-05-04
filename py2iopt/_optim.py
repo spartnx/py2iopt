@@ -14,13 +14,16 @@ class deltav_udp:
     Args:
         params (tuple): t0, tf, r0, rf, v0, vf, mu
     """
-    def __init__(self, params):
+    def __init__(self, params, algo):
         self.params = params
+        self.algo = algo
         return
 
     def fitness(self, x):
-        # Add constraint x[0] <= x[1]
-        return [obj_fcn(x, *self.params)]
+        if self.algo in ["ipopt"]:
+            return [obj_fcn(x, *self.params), time_constraint(x)]
+        elif self.algo in ["l-bfgs-b"]:
+            return [obj_fcn(x, *self.params)]
 
     def get_bounds(self):
         t0 = self.params[0]
@@ -30,7 +33,16 @@ class deltav_udp:
         return (lbs, ubs)
 
     def gradient(self, x):
-        return grad_fcn(x, *self.params)
+        if self.algo in ["ipopt"]:
+            return obj_grad(x, *self.params) + constraint_grad(x)
+        elif self.algo in ["l-bfgs-b"]:
+            return obj_grad(x, *self.params)
+
+    def get_nic(self):
+        if self.algo in ["ipopt"]:
+            return 1
+        elif self.algo in ["l-bfgs-b"]:
+            return 0
 
 
 @njit
@@ -38,7 +50,7 @@ def obj_fcn(x, t0, tf, r0, rf, v0, vf, mu):
     """Compute deltaV of two-impulse rendezvous with initial and final coasting.
     
     Args:
-        x (2-tuple): times of the first and second impulses
+        x (tuple): times of the first and second impulses
         t0 (float): time window lower bound
         tf (float): time window upper bound
         r0 (tuple): position vector at t0
@@ -68,11 +80,11 @@ def obj_fcn(x, t0, tf, r0, rf, v0, vf, mu):
 
 
 @njit
-def grad_fcn(x, t0, tf, r0, rf, v0, vf, mu):
+def obj_grad(x, t0, tf, r0, rf, v0, vf, mu):
     """Compute the gradient of the deltaV function as per Primer Vector Theory.
     
     Args:
-        x (2-tuple): times of the first and second impulses
+        x (tuple): times of the first and second impulses
         t0 (float): time window lower bound
         tf (float): time window upper bound
         r0 (tuple): position vector at t0
@@ -133,5 +145,31 @@ def grad_fcn(x, t0, tf, r0, rf, v0, vf, mu):
     pdotf_scalar = (pdotf.T @ pf).item(0)
     return (-pdot0_scalar * dv1_mag, -pdotf_scalar * dv2_mag)
 
-def time_constraint():
-    return
+
+@njit
+def time_constraint(x):
+    """Compute the left hand side of the time constraint t1-t2 <= 0 
+    where t1 and t2 are the times of the first and second impulses.
+    
+    Args:
+        x (tuple): times of the first and second impulses
+
+    Returns:
+        (float): t1 - t2
+    """
+    return x[0] - x[1]
+
+
+@njit
+def constraint_grad(x):
+    """Compute the gradient of the left hand side of the time 
+    constraint t1-t2 <= 0 where t1 and t2 are the times of the 
+    first and second impulses.
+    
+    Args:
+        x (tuple): times of the first and second impulses
+
+    Returns:
+        (tuple): gradient value (1, -1)
+    """
+    return (1, -1) 

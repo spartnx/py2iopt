@@ -27,9 +27,9 @@ def psi(t, r, v, h, ecc, slr, ta, mu):
 
     Args:
         t (float): time
-        r (3-tuple): position vector
-        r (3-tuple): velocity vector
-        h (3-tuple): angular momentum 
+        r (tuple): position vector
+        r (tuple): velocity vector
+        h (tuple): angular momentum 
         ecc (float): eccentricity
         slr (float): semi-latus rectum
         ta (float): true anomaly
@@ -73,9 +73,9 @@ def psi_inv(t, r, v, h, ecc, slr, ta, mu):
 
     Args:
         t (float): time
-        r (3-tuple): position vector
-        r (3-tuple): velocity vector
-        h (3-tuple): angular momentum 
+        r (tuple): position vector
+        r (tuple): velocity vector
+        h (tuple): angular momentum 
         ecc (float): eccentricity
         slr (float): semi-latus rectum
         ta (float): true anomaly
