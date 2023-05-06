@@ -21,7 +21,7 @@ For more details on how to compute stm(t,t0) from psi(t) and psi(t0), refer to:
 from numba import njit
 import numpy as np
 
-@njit
+# @njit
 def psi(t, r, v, h, ecc, slr, ta, mu):
     """Compute the matrix psi.
 
@@ -67,7 +67,7 @@ def psi(t, r, v, h, ecc, slr, ta, mu):
                 ), axis=1)
     return mat
 
-@njit
+# @njit
 def psi_inv(t, r, v, h, ecc, slr, ta, mu):
     """Compute the inverse of the matrix psi.
 

@@ -4,7 +4,6 @@ Functions to solve the optimization.
 
 import pykep as pk
 import numpy as np
-from numba import njit
 
 from ._state_transition import psi, psi_inv
 
@@ -45,12 +44,12 @@ class deltav_udp:
             return 0
 
 
-@njit
+# @njit # specify types of inputs and outputs for faster compiled function
 def obj_fcn(x, t0, tf, r0, rf, v0, vf, mu):
     """Compute deltaV of two-impulse rendezvous with initial and final coasting.
     
     Args:
-        x (tuple): times of the first and second impulses
+        x (array): times of the first and second impulses
         t0 (float): time window lower bound
         tf (float): time window upper bound
         r0 (tuple): position vector at t0
@@ -79,7 +78,7 @@ def obj_fcn(x, t0, tf, r0, rf, v0, vf, mu):
     return dv1_mag + dv2_mag
 
 
-@njit
+# @njit
 def obj_grad(x, t0, tf, r0, rf, v0, vf, mu):
     """Compute the gradient of the deltaV function as per Primer Vector Theory.
     
@@ -146,7 +145,7 @@ def obj_grad(x, t0, tf, r0, rf, v0, vf, mu):
     return (-pdot0_scalar * dv1_mag, -pdotf_scalar * dv2_mag)
 
 
-@njit
+# @njit
 def time_constraint(x):
     """Compute the left hand side of the time constraint t1-t2 <= 0 
     where t1 and t2 are the times of the first and second impulses.
@@ -160,7 +159,7 @@ def time_constraint(x):
     return x[0] - x[1]
 
 
-@njit
+# @njit
 def constraint_grad(x):
     """Compute the gradient of the left hand side of the time 
     constraint t1-t2 <= 0 where t1 and t2 are the times of the 
