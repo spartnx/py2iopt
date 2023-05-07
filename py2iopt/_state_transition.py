@@ -39,9 +39,6 @@ def psi(t, r, v, h, ecc, slr, ta, mu):
         (array): matrix psi
     """
     # Matrix parameters
-    # r = np.array(r).reshape((3,1))
-    # v = np.array(v).reshape((3,1))
-    # h = np.array(h).reshape((3,1))
     r_mag = np.linalg.norm(r)
     h_mag = np.linalg.norm(h)
     q = (-slr/h_mag)*(slr + r_mag)*r_mag*np.cos(ta)
@@ -86,9 +83,6 @@ def psi_inv(t, r, v, h, h_vec, ecc, slr, ta, mu):
         (array): inverse of the matrix psi
     """
     # Matrix parameters
-    # r = np.array(r)
-    # v = np.array(v)
-    # h = np.array(h)
     sigma = np.cross(r, h).reshape((1,3))
     w = np.cross(v, h).reshape((1,3))
     r_mag = np.linalg.norm(r)

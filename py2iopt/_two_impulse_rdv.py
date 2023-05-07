@@ -11,12 +11,11 @@ from ._optim import deltav_udp
 from ._plot_helpers import traj_and_pvec_data
 
 class TwoImpulseRDV:
-    def __init__(self, mu=1, algo="ipopt", verbosity=10):
+    def __init__(self, mu=1, verbosity=10):
         """Define dynamics environment and algorithm.
         
         Args:
             mu (float): central body's gravitational parameter
-            algo (str): optimization algorithm
             verbosity (int): algorithm verbosity level, set to 0 for no print on terminal
 
         exitcode:
@@ -25,7 +24,6 @@ class TwoImpulseRDV:
             -1 : problem failed to be solved
         """
         self.mu = mu
-        self.algo = algo
         self.verbosity = verbosity
         self.exitcode = 0
         self.ready = False
@@ -63,15 +61,12 @@ class TwoImpulseRDV:
 
         # Define Pygmo problem
         params = (self.t0, self.tf, self.r0, self.rf, self.v0, self.vf, self.mu)
-        prob = pg.problem(udp=deltav_udp(params, self.algo))
+        prob = pg.problem(udp=deltav_udp(params))
         if self.verbosity > 0:
             print(prob)
 
         # Define Pygmo algorithm
-        if self.algo == "ipopt":
-            uda = pg.ipopt()
-        elif self.algo == "l-bfgs-b":
-            uda = pg.scipy_optimize(method="L-BFGS-B")
+        uda = pg.ipopt()
         algo = pg.algorithm(uda)
         algo.set_verbosity(self.verbosity)
 
@@ -83,15 +78,14 @@ class TwoImpulseRDV:
         pop = algo.evolve(pop)
 
         # Check successful optimization termination
-        if self.algo == "ipopt":
-            if uda.get_last_opt_result() == 0:
+        if uda.get_last_opt_result() == 0:
+            if self.verbosity > 0:
                 print("Problem successfully solved.")
-                self.exitcode = 1
-            else:
-                print("Solver did not converge.")
-                self.exitcode = -1
-        elif self.algo in ["l-bfgs-b"]:
             self.exitcode = 1
+        else:
+            if self.verbosity > 0:
+                print("Solver did not converge.")
+            self.exitcode = -1
 
         # Record optimal solution
         if self.exitcode == 1:
@@ -127,10 +121,10 @@ class TwoImpulseRDV:
                     fig_title = "Optimal maneuver (with coasting)"
                 else:
                     draw_plot = False
-                    print("Figure not generated: the optimal solution is the same as the Lambert solution.\nTo see the Lambert maneuver, set plot_optimal to False.")
+                    print("\nFigure not generated: the optimal solution is the same as the Lambert solution.\nTo see the Lambert maneuver, set plot_optimal to False.")
             elif self.exitcode == -1:
                 draw_plot = False
-                print("Figure not generated: the solver did not converge (no optimal solution returned).")
+                print("\nFigure not generated: the solver did not converge (no optimal solution returned).")
         else:
             arcs = []
             nm1th_arc = (self.t0, self.tf)
@@ -198,7 +192,7 @@ class TwoImpulseRDV:
     def pretty_settings(self):
         """Display of the settings"""
         print(f"\nGravitational parameter : {self.mu}")
-        print(f"Algorithm               : {self.algo}")
+        print(f"Algorithm               : Ipopt")
         print(f"Verbosity               : {self.verbosity}")
         return
 

@@ -4,7 +4,6 @@ Functions to solve the optimization.
 
 import pykep as pk
 import numpy as np
-import numba as nb
 
 from ._state_transition import psi, psi_inv
 
@@ -14,16 +13,12 @@ class deltav_udp:
     Args:
         params (tuple): t0, tf, r0, rf, v0, vf, mu
     """
-    def __init__(self, params, algo):
+    def __init__(self, params):
         self.params = params
-        self.algo = algo
         return
 
     def fitness(self, x):
-        if self.algo in ["ipopt"]:
-            return [obj_fcn(x, *self.params), time_constraint(x)]
-        elif self.algo in ["l-bfgs-b"]:
-            return [obj_fcn(x, *self.params)]
+        return [obj_fcn(x, *self.params), time_constraint(x)]
 
     def get_bounds(self):
         t0 = self.params[0]
@@ -33,19 +28,12 @@ class deltav_udp:
         return (lbs, ubs)
 
     def gradient(self, x):
-        if self.algo in ["ipopt"]:
-            return obj_grad(x, *self.params) + constraint_grad(x)
-        elif self.algo in ["l-bfgs-b"]:
-            return obj_grad(x, *self.params)
+        return obj_grad(x, *self.params) + constraint_grad(x)
 
     def get_nic(self):
-        if self.algo in ["ipopt"]:
-            return 1
-        elif self.algo in ["l-bfgs-b"]:
-            return 0
+        return 1
 
 
-# @njit # specify types of inputs and outputs for faster compiled function
 def obj_fcn(x, t0, tf, r0, rf, v0, vf, mu):
     """Compute deltaV of two-impulse rendezvous with initial and final coasting.
     
@@ -79,7 +67,6 @@ def obj_fcn(x, t0, tf, r0, rf, v0, vf, mu):
     return dv1_mag + dv2_mag
 
 
-# @njit
 def obj_grad(x, t0, tf, r0, rf, v0, vf, mu):
     """Compute the gradient of the deltaV function as per Primer Vector Theory.
     
@@ -157,7 +144,6 @@ def obj_grad(x, t0, tf, r0, rf, v0, vf, mu):
     return (-pdot0_scalar * dv1_mag, -pdotf_scalar * dv2_mag)
 
 
-# @njit
 def time_constraint(x):
     """Compute the left hand side of the time constraint t1-t2 <= 0 
     where t1 and t2 are the times of the first and second impulses.
@@ -171,7 +157,6 @@ def time_constraint(x):
     return x[0] - x[1]
 
 
-# @njit
 def constraint_grad(x):
     """Compute the gradient of the left hand side of the time 
     constraint t1-t2 <= 0 where t1 and t2 are the times of the 
