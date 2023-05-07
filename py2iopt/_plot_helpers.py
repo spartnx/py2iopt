@@ -4,38 +4,6 @@ import math
 
 from ._state_transition import psi, psi_inv
 
-def lambert_solver(N, R0, Rf, V0, Vf, t0, tf, mu, plot=False, units=1000, tof=100*3600):
-    # Compute the multirevolution Lambert trajectories (2*Nmax + 1 in total, where Nmax is the max number of revolutions allowed)
-    model = pk.lambert_problem(r1=R0, r2=Rf, tof=tf-t0, mu=mu, max_revs=N, cw=False)
-    Nmax = model.get_Nmax()
-    num_traj = 2*Nmax + 1
-
-    # Retrieve initial and final velocity vectors along the transfer trajectory (m/s)
-    V1_list = list(model.get_v1())
-    V2_list = list(model.get_v2())
-
-    # Compute specific angular momentum vector (m^2/s)
-    H_list = [np.cross(np.array(R0), np.array(V1_list[i])) for i in range(num_traj)]
-
-    # Extract the trajectories' osculating elements (SI units)
-    elts_list = [pk.ic2par(R0, V1_list[i], mu=mu) for i in range(num_traj)]
-    sma_list = [elts_list[i][0] for i in range(num_traj)] # semi-major axis
-    ecc_list = [elts_list[i][1] for i in range(num_traj)] # eccentricity
-    p_list = [sma_list[i]*(1-ecc_list[i]**2) for i in range(num_traj)] # semi-latus rectum (aka parameter)
-    # inc_list = [elts_list[i][2] for i in range(num_traj)] # inclination, in [0,pi)
-    # raan_list = [elts_list[i][3] for i in range(num_traj)] # RAAN, in [0,2pi)
-    # w_list = [elts_list[i][4] for i in range(num_traj)] # argument of perigee, in [0,2pi)
-    E0_list = [elts_list[i][5] for i in range(num_traj)] # initial eccentric anomaly, in (-pi,pi]
-    f0_list = [2*np.arctan(((1+ecc_list[i])/(1-ecc_list[i]))**.5 * np.tan(E0_list[i]/2)) for i in range(num_traj)] # initial true anomaly, in (-pi,pi]
-    Ef_list = [pk.ic2par(Rf, V2_list[i], mu=mu)[5] for i in range(num_traj)] # final eccentric anomaly, in (-pi, pi]
-    ff_list = [2*np.arctan(((1+ecc_list[i])/(1-ecc_list[i]))**.5 * np.tan(Ef_list[i]/2)) for i in range(num_traj)] # final true anomaly, in (-pi,pi]
-
-    # Compute initial and final deltaVs (m/s)
-    dV0_list = [tuple(np.array(V1_list[i] - np.array(V0))) for i in range(num_traj)]
-    dVf_list = [tuple(np.array(Vf) - np.array(V2_list[i])) for i in range(num_traj)]
-
-    return Nmax, V1_list, V2_list, dV0_list, dVf_list, p_list, ecc_list, H_list, f0_list, ff_list, model
-
 
 def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
     """Compute the data needed to plot the trajectory and the primer vector magnitude history.
@@ -53,7 +21,15 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
         n_pts: number of points to compute trajectory and magnitude of primer vector over time
 
     Returns:
-
+        arcs_data
+        primer_vector_magnitude_2
+        impulse_time
+        primer
+        position
+        time_2
+        radius_vector_2
+        dV_tot
+        primer_vector_magnitude
     """
     impulse_time = []
     position = []
@@ -74,7 +50,7 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
     else:
         t1 = nm1th_arc[0]
 
-    if abs(t1 - t0) < 1e-3:
+    if t1 == t0:
         initial_coasting = False
         R1 = R0
         V1_m = V0
@@ -95,7 +71,7 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
     # Collect Vn_p
     # Arc n: (tn, Rn, Vn_p, tf, Rf, Vf)
     tn = nm1th_arc[1]
-    if abs(tn - tf) < 1e-3:
+    if tn == tf: 
         final_coasting = False
         Rn = Rf
         Vn_p = Vf
@@ -148,20 +124,18 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
     R_end = Rn
     V_start = velocity_m[-1]
     V_end = Vn_p
-    N = nm1th_arc[2]
-    sol = nm1th_arc[3]
-    Nmax, V_start, V_end, dV_start, dV_end, _, _, _, _, _, _ = lambert_solver(N, R_start, R_end, V_start, V_end, t_start, t_end, mu)
-    if sol >= 2*Nmax + 1:
-        raise Exception("Please specify a number between 0 and " + str(2*Nmax) + " included for the (n-1)th arc.")
-    dV_start = np.array(dV_start[sol]).reshape((3,1))
-    dV_end = np.array(dV_end[sol]).reshape((3,1))
+    model = pk.lambert_problem(r1=R_start, r2=R_end, tof=t_end-t_start, mu=mu, max_revs=0, cw=False)
+    V_p = list(model.get_v1())[0]
+    V_m = list(model.get_v2())[0]
+    dV_start = (np.array(V_p) - np.array(V_start)).reshape((3,1))
+    dV_end = (np.array(V_end) - np.array(V_m)).reshape((3,1))
     p_start = dV_start / np.linalg.norm(dV_start)
     p_end = dV_end / np.linalg.norm(dV_end)
 
     impulse_time += [t_start, t_end]
     position.append(Rn)
-    velocity_m.append(tuple(V_end)[0])
-    velocity_p += [tuple(V_start)[0], Vn_p]
+    velocity_m.append(V_m)
+    velocity_p += [V_p, Vn_p]
     if t_end < tf:
         arcs_data += [(t_start, position[-2], velocity_p[-2], t_end, position[-1], velocity_m[-1]), (t_end, position[-1], velocity_p[-1], tf, Rf, Vf)]
     else:

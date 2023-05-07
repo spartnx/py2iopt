@@ -13,7 +13,7 @@ sys.path.append("../")
 from py2iopt import TwoImpulseRDV, lambert_solver, obj_grad, traj_and_pvec_data
 
 if __name__ == "__main__":
-    run_loop = 0
+    run_loop = 1
     mu = pk.MU_EARTH # m^3/s^2
     t0 = 0 # s
     DU = 42164*1000 # canonical distance unit, m
@@ -81,7 +81,6 @@ if __name__ == "__main__":
                 data = traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3)
                 _, _, _, _, _, _, _, _, primer = data
                 max_primer[tof].append(max(primer))
-
 
         deltaVs_all = {"Lambert": pd.DataFrame(data=deltaVs_lambert, index=sep_angle),
                        "Primer L-BFGS-B": pd.DataFrame(deltaVs_primer_lbfgs, index=sep_angle),

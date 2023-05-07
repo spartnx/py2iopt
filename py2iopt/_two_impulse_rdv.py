@@ -18,7 +18,7 @@ class TwoImpulseRDV:
         Args:
             mu (float): central body's gravitational parameter
             algo (str): optimization algorithm
-            verbosity (int): algorithm verbosity level
+            verbosity (int): algorithm verbosity level, set to 0 for no print on terminal
 
         exitcode:
             0 : problem initialized but not yet attempted
@@ -84,7 +84,7 @@ class TwoImpulseRDV:
         pop = algo.evolve(pop)
 
         # Check successful optimization termination
-        if self.algo in ["ipopt"]:
+        if self.algo == "ipopt":
             if uda.get_last_opt_result == 0:
                 if self.verbosity > 0:
                     print("Solver did not converge (ipopt)")
@@ -95,23 +95,17 @@ class TwoImpulseRDV:
                 self.exitcode = 1
         elif self.algo in ["l-bfgs-b"]:
             self.exitcode = 1
-            # if uda.success == True:
-            #     print("Solver did not converge (l-bfgs-b)")
-            #     self.exitcode = -1
-            # else:
-            #     print("Problem successfully solved (l-bfgs-b)")
-            #     self.exitcode = 1
 
         # Record optimal solution
         if self.exitcode == 1:
-            self.t1 = pop.champion_x[0]
-            self.t2 = pop.champion_x[1] 
+            self.t1 = max(pop.champion_x[0], self.t0)
+            self.t2 = min(pop.champion_x[1], self.tf)
             self.deltav = pop.champion_f[0] 
         return
 
 
     def assess_optimality(self):
-        if self.t1 > self.t0 or self.t2 < self.tf:
+        if self.t1-self.t0 > 1e-3 or self.tf-self.t2 > 1e-3:
             return True
         else:
             return False
@@ -129,11 +123,11 @@ class TwoImpulseRDV:
         draw_plot = True
         if plot_optimal==True and self.exitcode==1 and self.assess_optimality()==True:
             arcs = []
-            nm1th_arc = (self.t1, self.t2, 0, 0)
+            nm1th_arc = (self.t1, self.t2)
             fig_title = "Optimal maneuver (with coasting)"
         elif plot_optimal==False:
             arcs = []
-            nm1th_arc = (self.t0, self.tf, 0, 0)
+            nm1th_arc = (self.t0, self.tf)
             fig_title = "Lambert maneuver (no coasting)"
         else:
             draw_plot = False
@@ -209,6 +203,7 @@ class TwoImpulseRDV:
     def pretty_results(self, time_scale=1):
         """Display of the outputs"""
         print(f"\nExit code : {self.exitcode}")
+        print(f"Coasting  : {self.assess_optimality()}")
         print(f"t1        : {round(self.t1/time_scale,4)}")
         print(f"t2        : {round(self.t2/time_scale,4)}")
         print(f"deltaV    : {round(self.deltav,4)}")
