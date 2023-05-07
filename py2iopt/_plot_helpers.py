@@ -354,7 +354,7 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
         radius_vector_2.append(radius_vector_arc)
         velocity_vector_2.append(velocity_vector_arc)
 
-    return arcs_data, primer_vector_magnitude_2, impulse_time, primer, position, time_2, radius_vector_2, dV_tot
+    return arcs_data, primer_vector_magnitude_2, impulse_time, primer, position, time_2, radius_vector_2, dV_tot, primer_vector_magnitude
 
 
 

@@ -40,8 +40,8 @@ if __name__ == "__main__":
     tirdv.pretty_results(time_scale=2*np.pi)
 
     # Plot trajectory and primer vector magnitude history
-    fig1 = tirdv.plot(plot_optimal=False, time_scale=2*np.pi)
-    fig2 = tirdv.plot(plot_optimal=True, time_scale=2*np.pi)
+    tirdv.plot(plot_optimal=False, time_scale=2*np.pi)
+    tirdv.plot(plot_optimal=True, time_scale=2*np.pi)
     plt.show()
 
 

@@ -2,6 +2,7 @@
 Functions made available to user to optimize two-impulse rendezvous trajectories.
 """
 
+from operator import truediv
 import pygmo as pg
 import numpy as np
 import pykep as pk
@@ -64,7 +65,8 @@ class TwoImpulseRDV:
         # Define Pygmo problem
         params = (self.t0, self.tf, self.r0, self.rf, self.v0, self.vf, self.mu)
         prob = pg.problem(udp=deltav_udp(params, self.algo))
-        print(prob)
+        if self.verbosity > 0:
+            print(prob)
 
         # Define Pygmo algorithm
         if self.algo == "ipopt":
@@ -84,10 +86,12 @@ class TwoImpulseRDV:
         # Check successful optimization termination
         if self.algo in ["ipopt"]:
             if uda.get_last_opt_result == 0:
-                print("Solver did not converge (ipopt)")
+                if self.verbosity > 0:
+                    print("Solver did not converge (ipopt)")
                 self.exitcode = -1
             else:
-                print("Problem successfully solved (ipopt)")
+                if self.verbosity > 0:
+                    print("Problem successfully solved (ipopt)")
                 self.exitcode = 1
         elif self.algo in ["l-bfgs-b"]:
             self.exitcode = 1
@@ -106,9 +110,24 @@ class TwoImpulseRDV:
         return
 
 
-    def plot(self, plot_optimal=True, time_scale=1, units=1, N_pts=1e3):
-        """Plot 3D rendezvous trajectory and history of primer vector magnitude."""
-        if plot_optimal==True and self.exitcode==1:
+    def assess_optimality(self):
+        if self.t1 > self.t0 or self.t2 < self.tf:
+            return True
+        else:
+            return False
+
+
+    def plot(self, plot_optimal=True, time_scale=1.0, units=1.0, N_pts=1e3):
+        """Plot 3D rendezvous trajectory and history of primer vector magnitude.
+        
+        Args:
+            plot_optimal (bool): specifies whether to plot the optimal or Lambert (non-optimal) maneuver
+            time_scale (float): factor to scale time
+            units (float): the length unit to be used in the plot of the initial and final orbits
+            N_pts (int): number of trajectory points
+        """
+        draw_plot = True
+        if plot_optimal==True and self.exitcode==1 and self.assess_optimality()==True:
             arcs = []
             nm1th_arc = (self.t1, self.t2, 0, 0)
             fig_title = "Optimal maneuver (with coasting)"
@@ -116,63 +135,67 @@ class TwoImpulseRDV:
             arcs = []
             nm1th_arc = (self.t0, self.tf, 0, 0)
             fig_title = "Lambert maneuver (no coasting)"
+        else:
+            draw_plot = False
+            print("Figure not generated: the optimal solution is the same as the Lambert solution.\nTo see the Lambert maneuver, set plot_optimal to False.")
 
-        # compute data to plot
-        data = traj_and_pvec_data(self.t0, 
-                                  self.tf, 
-                                  self.r0, 
-                                  self.rf, 
-                                  self.v0, 
-                                  self.vf, 
-                                  arcs, 
-                                  nm1th_arc, 
-                                  self.mu, 
-                                  N_pts=N_pts)
+        if draw_plot == True:
+            # compute data to plot
+            data = traj_and_pvec_data(self.t0, 
+                                    self.tf, 
+                                    self.r0, 
+                                    self.rf, 
+                                    self.v0, 
+                                    self.vf, 
+                                    arcs, 
+                                    nm1th_arc, 
+                                    self.mu, 
+                                    N_pts=N_pts)
 
-        arcs_data, pvec_mag, impulse_time, primer, position, time, radius_vector, dV_tot = data
+            arcs_data, pvec_mag, impulse_time, primer, position, time, radius_vector, dV_tot, _ = data
 
-        # Plot the history of the magnitude of the primer vector over time
-        fig = plt.figure()
-        fig.suptitle(fig_title)
-        ax1 = fig.add_subplot(121)
-        for i in range(len(arcs_data)):
-            t = np.array(time[i]) / time_scale
-            p = pvec_mag[i]
-            ax1.plot(t, p, zorder=1)
-        for i in range(len(arcs)+2):
-            t = impulse_time[i]/time_scale
-            p = np.linalg.norm(primer[i])
-            ax1.scatter(t, p, color='k', marker='x', s=20, zorder=2)
-        ax1.grid(True)
-        ax1.set(xlabel="Time", ylabel="Primer magnitude") 
-        ax1.set_title("Magnitude of the primer vector w.r.t. time\n(dV = " + str(round(dV_tot,4)) + ")")
+            # Plot the history of the magnitude of the primer vector over time
+            fig = plt.figure()
+            fig.suptitle(fig_title)
+            ax1 = fig.add_subplot(121)
+            for i in range(len(arcs_data)):
+                t = np.array(time[i]) / time_scale
+                p = pvec_mag[i]
+                ax1.plot(t, p, zorder=1)
+            for i in range(len(arcs)+2):
+                t = impulse_time[i]/time_scale
+                p = np.linalg.norm(primer[i])
+                ax1.scatter(t, p, color='k', marker='x', s=20, zorder=2)
+            ax1.grid(True)
+            ax1.set(xlabel="Time", ylabel="Primer magnitude") 
+            ax1.set_title("Magnitude of the primer vector w.r.t. time\n(dV = " + str(round(dV_tot,4)) + ")")
 
-        # Plot the trajectory
-        sma0,_,_,_,_,_ = pk.ic2par(self.r0, self.v0, mu=self.mu)
-        smaf,_,_,_,_,_ = pk.ic2par(self.rf, self.vf, mu=self.mu)
-        T0 = 2*np.pi*(sma0**3/self.mu)**.5
-        Tf = 2*np.pi*(smaf**3/self.mu)**.5
-        ax2 = fig.add_subplot(1, 2, 2, projection="3d")
-        ax2.scatter([0], [0], [0], s=10, color=['g'], label="Central body")
-        ax2.scatter([self.r0[0]], [self.r0[1]], [self.r0[2]], s=40, color=['r'], label="Initial position")
-        ax2.scatter([self.rf[0]], [self.rf[1]], [self.rf[2]], s=40, color=['b'], label="Final position")
-        for pos in position:
-            ax2.scatter([pos[0]], [pos[1]], [pos[2]], color=['k'], marker='x')
-        pk.orbit_plots.plot_kepler(self.r0, self.v0, tof=T0, mu=self.mu, N=2000, units=units, axes=ax2, color="0.7", label="Initial orbit")
-        pk.orbit_plots.plot_kepler(self.rf, self.vf, tof=Tf, mu=self.mu, N=2000, units=units, axes=ax2, color="0.5", label="Final orbit")
+            # Plot the trajectory
+            sma0,_,_,_,_,_ = pk.ic2par(self.r0, self.v0, mu=self.mu)
+            smaf,_,_,_,_,_ = pk.ic2par(self.rf, self.vf, mu=self.mu)
+            T0 = 2*np.pi*(sma0**3/self.mu)**.5
+            Tf = 2*np.pi*(smaf**3/self.mu)**.5
+            ax2 = fig.add_subplot(1, 2, 2, projection="3d")
+            ax2.scatter([0], [0], [0], s=10, color=['g'], label="Central body")
+            ax2.scatter([self.r0[0]], [self.r0[1]], [self.r0[2]], s=40, color=['r'], label="Initial position")
+            ax2.scatter([self.rf[0]], [self.rf[1]], [self.rf[2]], s=40, color=['b'], label="Final position")
+            for pos in position:
+                ax2.scatter([pos[0]], [pos[1]], [pos[2]], color=['k'], marker='x')
+            pk.orbit_plots.plot_kepler(self.r0, self.v0, tof=T0, mu=self.mu, N=2000, units=units, axes=ax2, color="0.7", label="Initial orbit")
+            pk.orbit_plots.plot_kepler(self.rf, self.vf, tof=Tf, mu=self.mu, N=2000, units=units, axes=ax2, color="0.5", label="Final orbit")
 
-        for i in range(len(arcs_data)):
-            X = [r[0] for r in radius_vector[i]]
-            Y = [r[1] for r in radius_vector[i]]
-            Z = [r[2] for r in radius_vector[i]]
-            ax2.plot(X, Y, Z, label='Arc ' + str(i))
-        ax2.legend()
-        ax2.set_title("Rendezvous trajectory")
-        ax2.axis("equal")
-        ax2.set_xlabel("X")
-        ax2.set_ylabel("Y")
-        ax2.set_zlabel("Z") 
-        return fig
+            for i in range(len(arcs_data)):
+                X = [r[0] for r in radius_vector[i]]
+                Y = [r[1] for r in radius_vector[i]]
+                Z = [r[2] for r in radius_vector[i]]
+                ax2.plot(X, Y, Z, label='Arc ' + str(i))
+            ax2.legend()
+            ax2.set_title("Rendezvous trajectory")
+            ax2.axis("equal")
+            ax2.set_xlabel("X")
+            ax2.set_ylabel("Y")
+            ax2.set_zlabel("Z") 
+        return
 
 
     def pretty_settings(self):
