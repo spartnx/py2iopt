@@ -1,12 +1,12 @@
 # py2iopt
-A Python implementation of optimal two-impulse, time-fixed rendezvous maneuvers in accordance with Primer Vector Theory. A Lambert rendezvous maneuver is improved by the addition of an initial and/or final coasting phase. The trajectories are strictly keplerian (no perturbation) and the Lambert solver integrated in `py2iopt` does not allow for multi-revolution transfers. The optimization algorithm used in `py2iopt` is Ipopt.
+A Python implementation of optimal two-impulse, time-fixed rendezvous maneuvers in accordance with Primer Vector Theory. A Lambert rendezvous maneuver is improved by the addition of an initial and/or final coasting phase. The trajectories are strictly keplerian (no perturbation) and the Lambert solver integrated in `py2iopt` does not allow for multi-revolution transfers. The optimization algorithm used in `py2iopt` is Ipopt [1].
 
 ### Dependencies
 
 - `pykep`, `numpy`, `matplotilb`, `numba`, `pygmo`
 
 ### Basic usage
-Examples on how to use `py2iopt` are included in `./examples/`. Example `1_` is a replication of Fig. 2.5 and Fig. 2.6 from Chapter 2 of "Spacecraft Trajectory Optimization" edited by B. A. Conway. Examples `2_` to `5_` compute families of two-impulse rendezvous maneuvers for a variety of relative positions between the chaser and the target.
+Examples on how to use `py2iopt` are included in `./examples/`. Example `1_` is a replication of Fig. 2.5 and Fig. 2.6 from Chapter 2 of "Spacecraft Trajectory Optimization" edited by B. A. Conway [2]. Examples `2_` to `5_` compute families of two-impulse rendezvous maneuvers for a variety of relative positions between the chaser and the target.
 
 First start by importing the `py2iopt` and `pykep`.
 
@@ -56,6 +56,16 @@ tirdv.solve()
 Finally, display the results and plot the rendezvous maneuvers with and without coasting phases.
 
 ```python
+# Display results
+tirdv.pretty_results(time_scale=2*np.pi)
+
+# Plot trajectory and primer vector magnitude history
+tirdv.plot(plot_optimal=False, time_scale=2*np.pi) # plot Lambert maneuver
+tirdv.plot(plot_optimal=True, time_scale=2*np.pi) # plot solution with initial and/or final coasting
+plt.show()
+```
+
+```python
 Exit code : 1
 Coasting  : True
 t1        : 0.2207
@@ -80,14 +90,14 @@ deltaV    : 0.2146
 
 ### Notes
 - Since the Ipopt optimizer uses a gradient-descent algorithm, the solutions found by `py2iopt` are locally optimal.
-- The literature on multi-impulse, time-fixed rendezvous maneuvers is vast. A few publications are highlighted in the reference section below. Some explore more precise formulations of the impulsive rendezvous problem, whether it be in terms of the number of impulses to minimize the deltaV, the addition of path constraints, or maneuvers in perturbed dynamic envirnments (e.g, J2, third-body). Others explore new methods to find globally optimal rendezvous maneuvers.
+- The literature on multi-impulse, time-fixed rendezvous maneuvers is vast. A few publications are highlighted in the reference section below. Ref. [3-5] set the foundations of Primer Vector Theory. Some publications explore more precise formulations of the impulsive rendezvous problem, whether it be in terms of the number of impulses to minimize the deltaV [6], the addition of path constraints [7], or maneuvers in perturbed dynamic environments (e.g, J2, third-body). Others explore new methods to find globally optimal rendezvous maneuvers [8-11].
 
 
 ### References
 
-[1] Conway, B. A. (2010). Spacecraft Trajectory Optimization. Cambridge University Press.
+[1] [Ipopt](https://coin-or.github.io/Ipopt/) (Interior Point OPTimizer)
 
-[2] [Ipopt](https://coin-or.github.io/Ipopt/) (Interior Point OPTimizer)
+[2] Conway, B. A. (2010). Spacecraft Trajectory Optimization. Cambridge University Press.
 
 [3] Lawden, D. F. (1963). Optimal Trajectories for Space Navigation. Butterworths.
 

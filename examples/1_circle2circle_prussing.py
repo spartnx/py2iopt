@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     # Plot trajectory and primer vector magnitude history
     tirdv.plot(plot_optimal=False, time_scale=2*np.pi) # plot Lambert maneuver
-    tirdv.plot(plot_optimal=True, time_scale=2*np.pi) # plot solution with initial and/or finalcoasting
+    tirdv.plot(plot_optimal=True, time_scale=2*np.pi) # plot solution with initial and/or final coasting
     plt.show()
 
 
