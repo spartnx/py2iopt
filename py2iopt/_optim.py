@@ -4,6 +4,7 @@ Functions to solve the optimization.
 
 import pykep as pk
 import numpy as np
+import numba as nb
 
 from ._state_transition import psi, psi_inv
 
@@ -127,8 +128,19 @@ def obj_grad(x, t0, tf, r0, rf, v0, vf, mu):
     # Angular momentum vector
     h = np.cross(np.array(r1), np.array(v1p))
     # Compute state-transition matrix between t_start and t_end, i.e., stm(t_start, t_end)
-    psi_inv_0 = psi_inv(x[0], r1, v1p, h, ecc, slr, ta0, mu)
-    psi_f = psi(x[1], r2, v2m, h, ecc, slr, taf, mu)
+    psi_inv_0 = psi_inv(x[0], 
+                        np.array(r1, dtype=np.float64), 
+                        np.array(v1p, dtype=np.float64), 
+                        np.array(h, dtype=np.float64), 
+                        np.array(h, dtype=np.float64).reshape((1,3)), 
+                        ecc, slr, ta0, mu
+                    )
+    psi_f = psi(x[1], 
+                np.array(r2, dtype=np.float64).reshape((3,1)), 
+                np.array(v2m, dtype=np.float64).reshape((3,1)), 
+                np.array(h, dtype=np.float64).reshape((3,1)), 
+                ecc, slr, taf, mu
+            )
     stm = psi_f @ psi_inv_0
     # Compute initial time derivative of the primer vector
     p0 = (dv1 / dv1_mag).reshape((3,1))

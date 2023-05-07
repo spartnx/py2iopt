@@ -2,7 +2,6 @@
 Functions made available to user to optimize two-impulse rendezvous trajectories.
 """
 
-from operator import truediv
 import pygmo as pg
 import numpy as np
 import pykep as pk
@@ -85,14 +84,12 @@ class TwoImpulseRDV:
 
         # Check successful optimization termination
         if self.algo == "ipopt":
-            if uda.get_last_opt_result == 0:
-                if self.verbosity > 0:
-                    print("Solver did not converge (ipopt)")
-                self.exitcode = -1
-            else:
-                if self.verbosity > 0:
-                    print("Problem successfully solved (ipopt)")
+            if uda.get_last_opt_result() == 0:
+                print("Problem successfully solved.")
                 self.exitcode = 1
+            else:
+                print("Solver did not converge.")
+                self.exitcode = -1
         elif self.algo in ["l-bfgs-b"]:
             self.exitcode = 1
 
@@ -104,11 +101,12 @@ class TwoImpulseRDV:
         return
 
 
-    def assess_optimality(self):
-        if self.t1-self.t0 > 1e-3 or self.tf-self.t2 > 1e-3:
-            return True
-        else:
+    def is_solution_lambert(self):
+        """Assess whether the optimal solution is Lambert."""
+        if self.t1>self.t0 or self.t2<self.tf:
             return False
+        else:
+            return True
 
 
     def plot(self, plot_optimal=True, time_scale=1.0, units=1.0, N_pts=1e3):
@@ -121,17 +119,22 @@ class TwoImpulseRDV:
             N_pts (int): number of trajectory points
         """
         draw_plot = True
-        if plot_optimal==True and self.exitcode==1 and self.assess_optimality()==True:
-            arcs = []
-            nm1th_arc = (self.t1, self.t2)
-            fig_title = "Optimal maneuver (with coasting)"
-        elif plot_optimal==False:
+        if plot_optimal == True:
+            if self.exitcode == 1:
+                if self.is_solution_lambert() == False:
+                    arcs = []
+                    nm1th_arc = (self.t1, self.t2)
+                    fig_title = "Optimal maneuver (with coasting)"
+                else:
+                    draw_plot = False
+                    print("Figure not generated: the optimal solution is the same as the Lambert solution.\nTo see the Lambert maneuver, set plot_optimal to False.")
+            elif self.exitcode == -1:
+                draw_plot = False
+                print("Figure not generated: the solver did not converge (no optimal solution returned).")
+        else:
             arcs = []
             nm1th_arc = (self.t0, self.tf)
             fig_title = "Lambert maneuver (no coasting)"
-        else:
-            draw_plot = False
-            print("Figure not generated: the optimal solution is the same as the Lambert solution.\nTo see the Lambert maneuver, set plot_optimal to False.")
 
         if draw_plot == True:
             # compute data to plot
@@ -203,7 +206,7 @@ class TwoImpulseRDV:
     def pretty_results(self, time_scale=1):
         """Display of the outputs"""
         print(f"\nExit code : {self.exitcode}")
-        print(f"Coasting  : {self.assess_optimality()}")
+        print(f"Coasting  : {not self.is_solution_lambert()}")
         print(f"t1        : {round(self.t1/time_scale,4)}")
         print(f"t2        : {round(self.t2/time_scale,4)}")
         print(f"deltaV    : {round(self.deltav,4)}")

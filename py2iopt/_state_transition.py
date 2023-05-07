@@ -18,10 +18,10 @@ For more details on how to compute stm(t,t0) from psi(t) and psi(t0), refer to:
     Journal of Optimization Theory and Application, Vol. 15, No. 5, 1975
 """
 
-from numba import njit
+from numba import jit, float64
 import numpy as np
 
-# @njit
+@jit(float64[:,:](float64, float64[:,:], float64[:,:], float64[:,:], float64, float64, float64, float64), nopython=True)
 def psi(t, r, v, h, ecc, slr, ta, mu):
     """Compute the matrix psi.
 
@@ -39,9 +39,9 @@ def psi(t, r, v, h, ecc, slr, ta, mu):
         (array): matrix psi
     """
     # Matrix parameters
-    r = np.array(r).reshape((3,1))
-    v = np.array(v).reshape((3,1))
-    h = np.array(h).reshape((3,1))
+    # r = np.array(r).reshape((3,1))
+    # v = np.array(v).reshape((3,1))
+    # h = np.array(h).reshape((3,1))
     r_mag = np.linalg.norm(r)
     h_mag = np.linalg.norm(h)
     q = (-slr/h_mag)*(slr + r_mag)*r_mag*np.cos(ta)
@@ -67,8 +67,9 @@ def psi(t, r, v, h, ecc, slr, ta, mu):
                 ), axis=1)
     return mat
 
-# @njit
-def psi_inv(t, r, v, h, ecc, slr, ta, mu):
+
+@jit(float64[:,:](float64, float64[:], float64[:], float64[:], float64[:,:], float64, float64, float64, float64), nopython=True)
+def psi_inv(t, r, v, h, h_vec, ecc, slr, ta, mu):
     """Compute the inverse of the matrix psi.
 
     Args:
@@ -85,9 +86,9 @@ def psi_inv(t, r, v, h, ecc, slr, ta, mu):
         (array): inverse of the matrix psi
     """
     # Matrix parameters
-    r = np.array(r)
-    v = np.array(v)
-    h = np.array(h)
+    # r = np.array(r)
+    # v = np.array(v)
+    # h = np.array(h)
     sigma = np.cross(r, h).reshape((1,3))
     w = np.cross(v, h).reshape((1,3))
     r_mag = np.linalg.norm(r)
@@ -106,13 +107,12 @@ def psi_inv(t, r, v, h, ecc, slr, ta, mu):
     b4 = f1*q - f2*s
 
     # Matrix
-    h = h.reshape((1,3))
     mat_inv = (1/h_mag**3) * np.concatenate((
                                     np.concatenate((f2*f5*sigma - f4*w, 2*f4*sigma - f2*w), axis=1),
                                     np.concatenate((-f1*f5*sigma+f3*w , -2*f3*sigma+f1*w ), axis=1),
                                     np.concatenate((h_mag*w           , -h_mag*sigma     ), axis=1),
                                     np.concatenate((-b1*sigma + b2*w  , -b3*sigma + b4*w ), axis=1),
-                                    np.concatenate((f4*h              , -f2*h            ), axis=1),
-                                    np.concatenate((-f3*h             , f1*h             ), axis=1)
+                                    np.concatenate((f4*h_vec          , -f2*h_vec        ), axis=1),
+                                    np.concatenate((-f3*h_vec         , f1*h_vec         ), axis=1)
                                 ), axis=0)
     return mat_inv

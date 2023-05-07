@@ -178,8 +178,19 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
         # Angular momentum vector
         H = np.cross(np.array(R_start), np.array(V_start))
         # Compute state-transition matrix between t_start and t_end, i.e., PHI(t_start, t_end)
-        LAMBDA_INV_0 = psi_inv(t_start, R_start, V_start, H, ecc, slr, f_start, mu)
-        LAMBDA_f = psi(t_end, R_end, V_end, H, ecc, slr, f_end, mu)
+        LAMBDA_INV_0 = psi_inv(t_start, 
+                                np.array(R_start, dtype=np.float64), 
+                                np.array(V_start, dtype=np.float64), 
+                                np.array(H, dtype=np.float64), 
+                                np.array(H, dtype=np.float64).reshape((1,3)), 
+                                ecc, slr, f_start, mu
+                            )
+        LAMBDA_f = psi(t_end, 
+                        np.array(R_end, dtype=np.float64).reshape((3,1)), 
+                        np.array(V_end, dtype=np.float64).reshape((3,1)), 
+                        np.array(H, dtype=np.float64).reshape((3,1)), 
+                        ecc, slr, f_end, mu
+                    )
         PHI = LAMBDA_f @ LAMBDA_INV_0
         # Compute initial time derivative of the primer vector
         p_end = primer[i+1]
@@ -207,7 +218,12 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
             sma,ecc,_,_,_,E = pk.ic2par(R, V, mu=mu)
             slr = sma*(1-ecc**2)
             f = 2*np.arctan(((1+ecc)/(1-ecc))**.5 * np.tan(E/2))
-            LAMBDA = psi(t, R, V, H, ecc, slr, f, mu)
+            LAMBDA = psi(t, 
+                            np.array(R, dtype=np.float64).reshape((3,1)), 
+                            np.array(V, dtype=np.float64).reshape((3,1)), 
+                            np.array(H, dtype=np.float64).reshape((3,1)), 
+                            ecc, slr, f, mu
+                        )
             PHI = LAMBDA @ LAMBDA_INV_0
             primer_vector = PHI[:3,:6] @ primer_state0
             primer_vector_magnitude_arc.append(np.linalg.norm(primer_vector))
@@ -238,7 +254,13 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
         # Angular momentum vector 
         H = np.cross(np.array(R_end), np.array(V_end))
         # Compute the constant part of the state-transition matrix at t_end, i.e., P_INV(t_end)
-        LAMBDA_INV_f = psi_inv(t_end, R_end, V_end, H, ecc, slr, f_end, mu)
+        LAMBDA_INV_f = psi_inv(t_end, 
+                                np.array(R_end, dtype=np.float64), 
+                                np.array(V_end, dtype=np.float64), 
+                                np.array(H, dtype=np.float64), 
+                                np.array(H, dtype=np.float64).reshape((1,3)), 
+                                ecc, slr, f_end, mu
+                            )
         # Compute time series
         p_end = primer[0]
         pdot_end = primer_dot_0[0]  
@@ -261,7 +283,12 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
                     E = E - 2*np.pi
             slr = sma*(1-ecc**2)
             f = 2*np.arctan(((1+ecc)/(1-ecc))**.5 * np.tan(E/2))
-            LAMBDA = psi(t, R, V, H, ecc, slr, f, mu)
+            LAMBDA = psi(t, 
+                            np.array(R, dtype=np.float64).reshape((3,1)), 
+                            np.array(V, dtype=np.float64).reshape((3,1)), 
+                            np.array(H, dtype=np.float64).reshape((3,1)), 
+                            ecc, slr, f, mu
+                        )
             PHI = LAMBDA @ LAMBDA_INV_f
             primer_vector = PHI[:3,:6] @ primer_statef
             primer_vector_magnitude_arc.append(np.linalg.norm(primer_vector))
@@ -292,7 +319,13 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
         # Angular momentum vector 
         H = np.cross(np.array(R_start), np.array(V_start))
         # Compute the constant part of the state-transition matrix at t_start, i.e., P_INV(t_start)
-        LAMBDA_INV_0 = psi_inv(t_start, R_start, V_start, H, ecc, slr, f_start, mu)
+        LAMBDA_INV_0 = psi_inv(t_start, 
+                                np.array(R_start, dtype=np.float64), 
+                                np.array(V_start, dtype=np.float64), 
+                                np.array(H, dtype=np.float64), 
+                                np.array(H, dtype=np.float64).reshape((1,3)), 
+                                ecc, slr, f_start, mu
+                            )
         # Compute time series
         p_start = primer[-1]
         pdot_start = primer_dot_f[-1]  
@@ -315,7 +348,12 @@ def traj_and_pvec_data(t0, tf, R0, Rf, V0, Vf, arcs, nm1th_arc, mu, N_pts=1e3):
                     E = E - 2*np.pi
             slr = sma*(1-ecc**2)
             f = 2*np.arctan(((1+ecc)/(1-ecc))**.5 * np.tan(E/2))
-            LAMBDA = psi(t, R, V, H, ecc, slr, f, mu)
+            LAMBDA = psi(t, 
+                            np.array(R, dtype=np.float64).reshape((3,1)), 
+                            np.array(V, dtype=np.float64).reshape((3,1)), 
+                            np.array(H, dtype=np.float64).reshape((3,1)), 
+                            ecc, slr, f, mu
+                        )
             PHI = LAMBDA @ LAMBDA_INV_0
             primer_vector = PHI[:3,:6] @ primer_state0
             primer_vector_magnitude_arc.append(np.linalg.norm(primer_vector))
