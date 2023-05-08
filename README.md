@@ -65,7 +65,7 @@ tirdv.plot(plot_optimal=True, time_scale=2*np.pi) # plot solution with initial a
 plt.show()
 ```
 
-```python
+```
 Exit code : 1
 Coasting  : True
 t1        : 0.2207
