@@ -95,15 +95,12 @@ class TwoImpulseRDV:
         return
 
 
-    def is_solution_lambert(self):
+    def _is_solution_lambert(self):
         """Assess whether the optimal solution is Lambert."""
-        if self.exitcode == 1:
-            if self.t1>self.t0 or self.t2<self.tf:
-                return False
-            else:
-                return True
+        if self.t1>self.t0 or self.t2<self.tf:
+            return False
         else:
-            return
+            return True
 
 
     def plot(self, plot_optimal=True, time_scale=1.0, units=1.0, N_pts=1e3):
@@ -118,7 +115,7 @@ class TwoImpulseRDV:
         draw_plot = True
         if plot_optimal == True:
             if self.exitcode == 1:
-                if self.is_solution_lambert() == False:
+                if self._is_solution_lambert() == False:
                     arcs = []
                     nm1th_arc = (self.t1, self.t2)
                     fig_title = "Optimal maneuver (with coasting)"
@@ -204,7 +201,7 @@ class TwoImpulseRDV:
         """Display of the outputs"""
         print(f"\nExit code : {self.exitcode}")
         if self.exitcode == 1:
-            print(f"Coasting  : {not self.is_solution_lambert()}")
+            print(f"Coasting  : {not self._is_solution_lambert()}")
             print(f"t1        : {round(self.t1/time_scale,4)}")
             print(f"t2        : {round(self.t2/time_scale,4)}")
             print(f"deltaV    : {round(self.deltav,4)}")
