@@ -67,6 +67,7 @@ class TwoImpulseRDV:
 
         # Define Pygmo algorithm
         uda = pg.ipopt()
+        uda.set_string_option("sb", "yes")
         algo = pg.algorithm(uda)
         algo.set_verbosity(self.verbosity)
 
