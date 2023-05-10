@@ -6,7 +6,7 @@ A Python implementation of optimal two-impulse, time-fixed rendezvous maneuvers 
 - `pykep`, `numpy`, `matplotilb`, `numba`, `pygmo`
 
 ### Basic usage
-Examples on how to use `py2iopt` are included in `./examples/`. Example `1_` is a replication of Fig. 2.5 and Fig. 2.6 from Chapter 2 of "Spacecraft Trajectory Optimization" edited by B. A. Conway [2]. Examples `2_` to `5_` compute families of two-impulse rendezvous maneuvers for a variety of relative positions between the chaser and the target.
+Examples on how to use `py2iopt` are included in `./examples/`. Example `1_` is a replication of Fig. 2.5 and Fig. 2.6 from Chapter 2 of "Spacecraft Trajectory Optimization" edited by B. A. Conway [2]. Examples `2_` to `5_` compute families of two-impulse rendezvous maneuvers for a variety of relative positions between the chaser and the target. Example `6_` demonstrates the use of the `multi_solve()` method that computes in parallel multiple rendezvous maneuvers with different initial guesses.
 
 First start by importing the `py2iopt` and `pykep`.
 
@@ -47,7 +47,7 @@ tirdv = TwoImpulseRDV(mu=mu, verbosity=1)
 tirdv.set_problem(t0, tf, rc0, rcf, vc0, vcf)
 ```
 
-Solve the problem.
+Solve the problem. If it is desired to solve in parallel several rendezvous maneuvers with different initial guesses, use the `multi_solve()` method. Refer to example `6_` for more details.
 
 ```python
 tirdv.solve()
