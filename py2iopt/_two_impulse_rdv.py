@@ -74,7 +74,7 @@ class TwoImpulseRDV:
         # Define Pygmo population and initialize it at [self.t0, self.tf]
         pop = pg.population(prob)
         pop.push_back(x = np.array([self.t0, self.tf]))
-
+        
         # Minimize deltaV
         pop = algo.evolve(pop)
 
@@ -93,6 +93,69 @@ class TwoImpulseRDV:
             self.t1 = max(pop.champion_x[0], self.t0)
             self.t2 = min(pop.champion_x[1], self.tf)
             self.deltav = pop.champion_f[0] 
+        return
+
+
+    def multi_solve(self, x0=[]):
+        """Parallelize the deltaV minimization of two-impulse 
+        rendezvous maneuvers with different initial guesses.
+        
+        Args:
+            x0 (list): initial guesses
+        """
+        assert self.ready == True, "Please first call `set_problem()`"
+        assert type(x0)==list, "Please specify x0 as a list"
+        # Outputs' placeholers
+        self.t1 = None # first impulse time
+        self.t2 = None # second impulse time
+        self.deltav = None # rendezvous deltaV
+
+        # Define Pygmo problem
+        params = (self.t0, self.tf, self.r0, self.rf, self.v0, self.vf, self.mu)
+        prob = pg.problem(udp=deltav_udp(params))
+        if self.verbosity > 0:
+            print(prob)
+
+        # Define Pygmo algorithm
+        uda = pg.ipopt()
+        uda.set_string_option("sb", "yes")
+        algo = pg.algorithm(uda)
+        algo.set_verbosity(self.verbosity)
+
+        # Define Pygmo archipelago
+        islands = []
+        topo = pg.topology(udt=pg.unconnected())
+        archi = pg.archipelago(t=topo)
+        for guess in x0:
+            pop = pg.population(prob)
+            pop.push_back(x = np.array(guess))
+            isl = pg.island(algo=algo, pop=pop)
+            islands.append(isl)
+            archi.push_back(isl)
+        
+        # Minimize deltaV
+        archi.evolve()
+        archi.wait_check()
+
+        # Check successful optimization termination for at least one of the islands
+        opt_results = [isl.get_algorithm().extract(pg.ipopt).get_last_opt_result() for isl in islands]
+        if np.prod(opt_results) == 0:
+            if self.verbosity > 0:
+                print("At least one problem successfully solved.")
+            self.exitcode = 1
+        else:
+            if self.verbosity > 0:
+                print("Solver did not converge for all the problems.")
+            self.exitcode = -1
+
+        # Record optimal solution
+        if self.exitcode == 1:
+            champs_obj = [archi.get_champions_f()[idx][0] for idx in range(len(x0)) if opt_results[idx]==0]
+            champs_x = [archi.get_champions_x()[idx] for idx in range(len(x0)) if opt_results[idx]==0]
+            best_idx = min(range(len(champs_obj)), key=champs_obj.__getitem__)
+            self.t1 = max(champs_x[best_idx][0], self.t0)
+            self.t2 = min(champs_x[best_idx][1], self.tf)
+            self.deltav = champs_obj[best_idx]
         return
 
 
